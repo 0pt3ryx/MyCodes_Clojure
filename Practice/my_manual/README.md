@@ -1,14 +1,12 @@
 # my_manual
 
-A Clojure library designed to ... well, that part is up to you.
+A Clojure project, which contains only my source code.
 
 ## Usage
 
-FIXME
+This is just used as a manual or reference, cause I'm a beginner in the Clojure.
 
-## License
+## Reference
 
-Copyright © 2019 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Many codes are from "Living Clojure: An Introduction and Training Plan for Developers" (author: Carin Meier)
+and Clojure problems in http://www.4clojure.com.
