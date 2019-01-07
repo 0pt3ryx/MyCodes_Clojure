@@ -188,12 +188,116 @@
 )
 
 (comment
-  ; ETC
-  ; #class
+  ;; Currying
+  ;; #partial #comp
+
+  ; To create a function by using another function whose arguments are not fully given
+  (defn target-func [name color]
+    (if (= color :red)
+      (str name " likes red.")
+      (str name " doesn't like red but may other color.")))
+  (partial target-func "0pt3ryx")                           ; It returns the new function.
+  ((partial target-func "0pt3ryx") :red)
+
+  ; To create a composite function
+  (defn inner-func [color]
+    (if (= color :red) "roses" "evergreens"))
+  (defn outer-func [things]
+    (str "You may like color like " things " , I guess"))
+  (defn composite-func [color]
+    ((comp outer-func inner-func) color))
+)
+
+(comment
+  ;; Laziness, recursion and loop
+  ;; #take #range #count #repeat #repeatedly #cycle #loop #recur
+
+  ; To get an integer sequence
+  ; (range)   *Warning code - can crash REPL*
+  (range 10)
+  (range 5 10)
+
+  ; To take n elements from a lazy sequence
+  (take 10 (range))
+
+  ; To count the number of elements of a lazy sequence
+  (count (take 10000 (range)))
+
+  ; To repeat an element
+  (repeat 3 "green")
+  (count (take 10000 (repeat "green")))
+
+  ; To create a random int sequence
+  (repeat 5 (rand-int 10))                                  ; This fails to create a random int sequence.
+  (repeatedly 5 #(rand-int 10))                             ; This succeeds to create one.
+                                                            ;   One of arguments of 'repeatedly' is a function which has no argument.
+  (take 10 (repeatedly #(rand-int 10)))
+
+  ; To repeat elements in cycle
+  (take 7 (cycle ["red" "blue" "green"]))
+
+  ; Recursive call
+  (defn rainbow-has [in out]
+    (if (empty? in)
+      out
+      (rainbow-has (rest in) (conj out (str "Rainbow has " (first in))))))
+  (rainbow-has ["red" "green" "blue" "yellow" "violet"] [])
+
+  ; Loop
+  (defn rainbow-has [input]
+    (loop [in input
+           out []]
+      (if (empty? in)
+        out
+        (recur (rest in) (conj out (str "Rainbow has " (first in)))))))
+  (rainbow-has ["red" "green" "blue" "yellow" "violet"])
+)
+
+(comment
+  ;; ETC
+  ;; #class #destructuring #as #data-type #rand-int
 
   ; To check class
   (class true)
+
+  ; To get a random int
+  (rand-int 10)
+
+  ; To destructure (vector)
+  (let [[name color] ["0pt3ryx" "red"]]
+    (str name " likes " color))
+
+  ; To destructure (map)
+  (let [{name :name color :color}
+        {:name "0pt3ryx" :color "green"}]
+    (str name " sees a " color " cube."))
+
+  ; To destructure (map - simplified)
+  (let [{:keys [name color]}
+        {:name "0pt3ryx" :color "green"}]
+    (str name " sees a " color " cube."))
+
+  ; To destructure (map - in function)
+  (defn flower-colors [colors]
+    (str "The flowers are "
+         (:flower1 colors)
+         " and "
+         (:flower2 colors)))
+  (flower-colors {:flower1 "red" :flower2 "blue"})          ; Before destructuring
+
+  (defn flower-colors [{:keys [flower1 flower2]}]
+    (str "The flowers are " flower1 " and " flower2))
+  (flower-colors {:flower1 "red" :flower2 "blue"})          ; After destructuring
+
+  ; To get data type
+  (let [[name [color] :as data-type] ["0pt3ryx" ["green"]]]
+    {:color color :name name :data-type data-type})
 )
 
 (defn -main [& args]
   (println "Hello"))
+
+; 1 1 2 3 5 8 13 21 34
+(defn fibo [a1 a2 n]
+  (if (<= n 1)
+    ))
