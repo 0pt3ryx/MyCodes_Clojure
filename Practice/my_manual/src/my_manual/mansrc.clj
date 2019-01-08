@@ -253,9 +253,78 @@
   (rainbow-has ["red" "green" "blue" "yellow" "violet"])
 )
 
+
+(comment
+  ;; Data conversion
+  ;; #map #reduce #filter #remove #for
+
+  ; To convert(generate) a collection into another collection
+  (take 10 (map #(* % 2) (range)))                          ; (map function collection1 collection2 ...)
+
+  ; Side effects
+  (def color-print (map #(println %)
+                        [:red :yellow :green :blue :violet])) ; Side effects are caused when it is called.
+  (def color-print (doall (map #(println %)
+                               [:red :yellow :green :blue :violet]))) ; Side effects are caused when it is defined.
+
+  ; To generate a collection from two collections or more
+  (defn concat-color-thing [color thing]
+    (str color "-" thins))
+  (map concat-color-thing                                  ; 'map' stops when it reaches end of the shortest collection.
+       ["red" "blue" "orange" "green" "black"] (cycle ["cup" "table"]))
+
+  ; To generate a collection or a value from another collection
+  (reduce + [1 2 3 4 5])                                    ; 'reduce' can't deal with an infinite sequence.
+  (reduce (fn [r x] (+ r (* x x))) [1 2 3])                 ; r is the accumulation and x is the operand.
+  (reduce (fn [r x] (if (nil? x) r (conj r x))) [] [:red nil :green :blue nil nil :violet])
+
+  ; To filter
+  (filter (complement nil?) [:red nil :green nil nil])
+  (filter keyword? [:red nil :green nil nil])
+  (remove nil? [:red nil :green nil nil])
+
+  ; To traverse a collection and to deal with each element
+  (for [color [:red :green :blue]]
+    (str (name color)))
+  (for [color [:red :green :blue]
+        thing [:cup :table]]                                ; If there are two collections or more, the collections
+    (str (name color) "-" (name thing)))                    ;   are combined.
+
+  ; To use modifiers in 'for'
+  (for [color [:red :green :blue]                           ; Modifier - :let
+        thing [:cup :table]
+        :let [color-str (str "color-" (name color))
+              thing-str (str "thing-" (name thing))
+              display-str (str color-str "-" thing-str)]]
+    display-str)
+
+  (for [color [:red :green :blue]                           ; Modifier - :when
+        thing [:cup :table]
+        :let [color-str (str "color-" (name color))
+              thing-str (str "thing-" (name thing))
+              display-str (str color-str "-" thing-str)]
+        :when (= thing :table)]
+    display-str)
+
+  ; To unnest a nested collection
+  (flatten [[:yellow [:green] [[:blue]]]])
+
+  ; To convert data structure
+  (vec '(1 2 3))
+  (into [1] '(2 3))
+  (sorted-map :e 1 :a 2 :b 4 :c 3)
+  (into (sorted-map) {:e 1 :a 2 :b 4 :c 3})
+  (into {} [[:a 1] [:b 2] [:c 3]])
+  (into [] {:a 1, :b 2, :c 3})
+  (partition 3 [1 2 3 4 5 6 7 8 9])
+  (partition 3 [1 2 3 4 5 6 7 8 9 10])                      ; The remainders are thrown.
+  (partition-all 3 [1 2 3 4 5 6 7 8 9 10])                  ; The remainders are not thrown.
+  (partition-by #(= 6 %) [1 2 3 4 5 6 7 8 9 10])
+)
+
 (comment
   ;; ETC
-  ;; #class #destructuring #as #data-type #rand-int
+  ;; #class #destructuring #as #data-type #rand-int #complement #keyword? #name
 
   ; To check class
   (class true)
@@ -292,12 +361,23 @@
   ; To get data type
   (let [[name [color] :as data-type] ["0pt3ryx" ["green"]]]
     {:color color :name name :data-type data-type})
+
+  ; To create a function whose result is complement of another predicate-function
+  ((complement nil?) nil)                                   ; (complement predicate-function)
+
+  ; To check if a given value is a keyword or not
+  (keyword? :red)
+
+  ; To convert a keyword into a string
+  (name :red)
 )
 
 (defn -main [& args]
   (println "Hello"))
 
-; 1 1 2 3 5 8 13 21 34
-(defn fibo [a1 a2 n]
-  (if (<= n 1)
-    ))
+; 1 1 2 3 5 8 13 21 34 55 89
+(defn fibo [n]
+  (loop [count n a1 1 a2 1]
+    (if (<= count 1)
+      a2
+      (recur (dec count) a2 (+ a1 a2)))))
