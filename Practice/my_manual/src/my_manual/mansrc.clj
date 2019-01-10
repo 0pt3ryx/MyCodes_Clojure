@@ -323,6 +323,122 @@
 )
 
 (comment
+  ;; State and Concurrency
+  ;; #atom #reset #swap #side-effects #ref #alter #dosync #transaction #commute #agent #send #send-off
+
+  ; To store state (atom)
+  (def who-atom (atom :caterpillar))
+  who-atom
+  @who-atom                                                 ; To get value of an atom
+
+  ; To modify one state synchronously
+  (reset! who-atom :chrysalis)                              ; Function whose name has '!' at the end modifies state.
+  @who-atom
+
+  (def who-atom (atom :caterpillar))
+  (defn change [state]
+    (case state
+      :caterpillar :chrysalis
+      :chrysalis :butterfly
+      :butterfly))
+  (swap! who-atom change)                                   ; Keep in mind that when you use 'swap!', the passed
+  @who-atom                                                 ;   function should not have side effects.
+  (swap! who-atom change)
+  @who-atom
+
+  ; When you use function with no side effects
+  (def counter (atom 0))
+  @counter
+  (let [n 5]
+    (future (dotimes [_ n] (swap! counter inc)))
+    (future (dotimes [_ n] (swap! counter inc)))
+    (future (dotimes [_ n] (swap! counter inc))))
+  @counter
+
+  ; When you use function with side effects
+  (def counter (atom 0))
+  @counter
+  (defn inc-print [val]
+    (println val)
+    (inc val))
+  (let [n 2]
+    (future (dotimes [_ n] (swap! counter inc-print)))
+    (future (dotimes [_ n] (swap! counter inc-print)))
+    (future (dotimes [_ n] (swap! counter inc-print))))
+  @counter
+
+  ; To modify two or more states in the coordinated way (transaction)
+  ;   Behavior of 'ref' in a transaction
+  ;     1. Atomic - Every modification in a transaction is invoked for every 'ref's. If there is an error,
+  ;                any 'ref's are not modified.
+  ;     2. Consistent - Verifier (function) can be optionally used before finish a transaction.
+  ;     3. Isolated - A transaction can't know what happen to other transactions.
+  (def balance (ref 1000))
+  (def money-in-hand (ref 1200))
+  (defn deposit-100-won []                                  ; Function which contains 'alter' should
+    (when (pos? @money-in-hand)                             ;   have no side effects.
+      (alter money-in-hand #(- % 100))
+      (alter balance #(+ % 100))))
+  (dosync (deposit-100-won))                                ; If 'dosync' is not used, it occurs error.
+                                                            ;   'dosync' mediates all modifications in a transaction.
+
+  (def balance (ref 1000))
+  (def money-in-hand (ref 1200))
+  (defn deposit-100-won []
+    (dosync (when (pos? @money-in-hand)
+              (alter money-in-hand #(- % 100))
+              (alter balance #(+ % 100)))))
+  (let [n 5]
+    (future (dotimes [_ n] (deposit-100-won)))
+    (future (dotimes [_ n] (deposit-100-won)))
+    (future (dotimes [_ n] (deposit-100-won))))
+  @balance
+  @money-in-hand
+
+  ;   'commute' doesn't retry to modify state in a transaction unlike 'ref'.
+  (def balance (ref 1000))
+  (def money-in-hand (ref 1200))
+  (defn deposit-100-won []
+    (dosync (when (pos? @money-in-hand)
+              (commute money-in-hand #(- % 100))            ; This could be a dangerous example.
+              (commute balance #(+ % 100)))))               ; Function which contains 'commute' should be commutative.
+  (let [n 5]
+    (future (dotimes [_ n] (deposit-100-won)))
+    (future (dotimes [_ n] (deposit-100-won)))
+    (future (dotimes [_ n] (deposit-100-won))))
+  @balance
+  @money-in-hand
+
+  ; Deal with dependency
+  (def x (ref 1))
+  (def y (ref 1))                                           ; y = x+2
+  (defn sync-values []
+    (dosync
+      (alter x inc)
+      (ref-set y (+ 2 @x))))                                ; 'ref-set' is useful when one ref-value has
+  (let [n 2]                                                ;    dependency on another ref-value.
+    (future (dotimes [_ n] (sync-values)))
+    (future (dotimes [_ n] (sync-values))))
+  @x
+  @y
+
+  ; Asynchronous modification (to use agent)
+  ; To store state (agent)
+  (def who-agent (agent :caterpillar))
+  @who-agent
+  (defn change [state]
+    (case state
+      :caterpillar :chrysalis
+      :chrysalis :butterfly
+      :butterfly))
+  (send who-agent change)                                   ; 'send' doesn't waiting for the given process.
+  @who-agent
+
+  (send-off who-agent change)
+  @who-agent
+)
+
+(comment
   ;; ETC
   ;; #class #destructuring #as #data-type #rand-int #complement #keyword? #name
 
