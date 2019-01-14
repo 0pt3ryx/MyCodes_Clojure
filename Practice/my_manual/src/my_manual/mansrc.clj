@@ -324,7 +324,8 @@
 
 (comment
   ;; State and Concurrency
-  ;; #atom #reset #swap #side-effects #ref #alter #dosync #transaction #commute #agent #send #send-off
+  ;; #atom #reset #swap #side-effects #ref #alter #dosync #transaction #commute #agent #send #send-off #error
+  ;; #exception #restart-agent #set-error-mode! #set-error-handler
 
   ; To store state (atom)
   (def who-atom (atom :caterpillar))
@@ -434,8 +435,117 @@
   (send who-agent change)                                   ; 'send' doesn't waiting for the given process.
   @who-agent
 
-  (send-off who-agent change)
+  (send-off who-agent change)                               ; 'send-off' is used when it is need to wait for I/O process.
   @who-agent
+
+  ; Error or exception in agent
+  (def who-agent (agent :caterpillar))
+  (defn change [state]
+    (case state
+      :caterpillar :chrysalis
+      :chrysalis :butterfly
+      :butterfly))
+  (defn change-error [state] (throw (Exception. "Boom!")))
+  (send who-agent change-error)
+  @who-agent
+  (send-off who-agent change)                               ; You can't change the status when there is an error.
+  (agent-error who-agent)                                   ; To check error
+  (restart-agent who-agent :caterpillar)                    ; To remove error and reinitialize the agent
+  (send-off who-agent change)                               ; You can change the status after 'restart-agent'.
+
+  ; Error or exception handling in agent
+  (def who-agent (agent :caterpillar))
+  (set-error-mode! who-agent :continue)                     ; To switch error mode
+  (defn err-handler-fn [a ex] (println "error " ex " value is " @a))
+  (set-error-handler! who-agent err-handler-fn)             ; To set error handler
+  (send who-agent change-error)
+  (send who-agent change)                                   ; You don't need to restart the agent.
+  @who-agent
+)
+
+(comment
+  ;; Java and Polymorphism
+  ;; #Java #import #doto #defmulti #defmethod #defprotocol #defrecord
+
+  ; To use String methods
+  (. "caterpillar" toUpperCase)                             ; String st = new String("caterpillar");
+                                                            ; st.toUpperCase();
+
+  (.indexOf "caterpillar" "pillar")                         ; String st1 = new String("caterpillar");
+                                                            ; String st2 = new String("pillar");
+                                                            ; st1.indexOf(st2);
+
+  ; Create a class instance
+  (new String "Hello World!")
+  (String. "Hello World!")                                  ; Short version
+
+  ; To import a library
+  (ns opteryx.network (:import (java.net InetAddress)))     ; import java.net.InetAddress;
+  (import 'java.net.InetAddress)
+
+  ; To call a static method.
+  (.getHostName (InetAddress/getByName "localhost"))        ; Use '/'.
+
+  ; To call a static method without import
+  (java.net.InetAddress/getByName "localhost")
+
+  ; To call instance methods successively
+  (def sb (doto (StringBuffer. "Who ")
+            (.append "are ")
+            (.append "you?")))
+  (.toString sb)
+
+  ; Multimethod (polymorphism for one function)
+  (defn what-is-it [input]                                  ; Before using multimethod
+    (cond
+      (= java.lang.String (class input)) "This is a String."
+      (= clojure.lang.Keyword (class input)) "This is a Keyword."
+      (= java.lang.Long (class input)) "This is a number."))
+  (what-is-it 12)
+
+  (defmulti what-is-it class)                               ; Using multimethod
+  (defmethod what-is-it java.lang.String [input]
+    (str "This is a String. " input))
+  (defmethod what-is-it clojure.lang.Keyword [input]
+    (str "This is a Keyword. " input))
+  (defmethod what-is-it java.lang.Long [input]
+    (str "This is a number. " input))
+  (defmethod what-is-it :default [input]                    ; Default method
+    (str "I don't what it is. " input))
+  (what-is-it 12)
+
+  (defmulti is-negative (fn [input]
+                          (if (< input 0)
+                            :negative
+                            :not-negative)))
+  (defmethod is-negative :negative [_]
+    "The number is negative.")
+  (defmethod is-negative :not-negative [_]
+    "The number is 0 or positive.")
+
+  ; Protocol (polymorphism for 2 or more functions)
+  (defprotocol Test-protocol
+    (what-is-it [this]))
+
+  (extend-protocol Test-protocol
+    java.lang.String
+    (what-is-it [this]
+      (str (.toUpperCase this) " is a String."))
+
+    clojure.lang.Keyword
+    (what-is-it [this]
+      (case this
+        :negative "This is negative."
+        :not-negative "This is not negative."))
+
+    java.lang.Long
+    (what-is-it [this]
+      (if (< this 0)
+        "The number is negative."
+        "The number is 0 or positive.")))
+  (what-is-it "Hello")
+  (what-is-it :negative)
+  (what-is-it -3)
 )
 
 (comment
