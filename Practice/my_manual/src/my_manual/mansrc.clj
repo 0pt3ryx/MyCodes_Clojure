@@ -465,7 +465,7 @@
 
 (comment
   ;; Java and Polymorphism
-  ;; #Java #import #doto #defmulti #defmethod #defprotocol #defrecord
+  ;; #Java #import #doto #defmulti #defmethod #defprotocol #defrecord #deftype
 
   ; To use String methods
   (. "caterpillar" toUpperCase)                             ; String st = new String("caterpillar");
@@ -546,6 +546,46 @@
   (what-is-it "Hello")
   (what-is-it :negative)
   (what-is-it -3)
+
+  ; To define a new data type (defrecord)
+  (defrecord Cup [color price])                             ; 'defrecord'
+  (def my-cup (Cup. "green" 12000))                         ; To create an instance
+  (class my-cup)
+  (.color my-cup)                                           ; To get a field of an instance
+  (.-price my-cup)                                          ; '.-' is usually used instead of '.'.
+
+  (defprotocol Description-cup                              ; 'defprotocol' + 'defrecord'
+    (describe-color [this])
+    (describe-price [this]))
+  (defrecord StandardCup [color price]
+    Description-cup
+    (describe-color [this]
+      (str "This standard cup has " color " color."))
+    (describe-price [this]
+      (str "Its price is " price " and this is quite cheap.")))
+  (defrecord DurableCup [color price]
+    Description-cup
+    (describe-color [this]
+      (str "This durable cup has " color " color and so durable."))
+    (describe-price [this]
+      (str "Its price is " price " and this is more expensive.")))
+  (def my-cup (StandardCup. "green" 11000))
+  (def your-cup (DurableCup. "orange" 80500))
+  (describe-color my-cup)
+  (describe-price my-cup)
+  (describe-color your-cup)
+  (describe-price your-cup)
+
+  ; To define a new data type (deftype)
+  (deftype Cup [color price])                               ; 'deftype'
+  (def my-cup (Cup. "green" 12000))                         ; To create an instance
+  (class my-cup)
+  (.color my-cup)                                           ; To get a field of an instance
+  (.-price my-cup)                                          ; '.-' is usually used instead of '.'.
+
+  ;; There are some differences between 'defrecord' and 'deftype'.
+  ; https://lispcast.com/deftype-vs-defrecord/
+  ; https://clojure.org/reference/datatypes
 )
 
 (comment
